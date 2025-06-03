@@ -1,31 +1,52 @@
+// Fetch API data
 const url = `https://api.bluelytics.com.ar/v2/latest`
 const response = new Request(url)
 const data = await response.loadJSON()
-const valueBuy = data.blue.value_buy.toFixed(2);
-const valueSell = data.blue.value_sell.toFixed(2);
-const timeFormatter = new DateFormatter();
-timeFormatter.dateFormat = 'dd/MM/yyyy HH:mm';
-const bgReq= new Request ("https://i.ibb.co/P6SZwZt/14731307-rm218-bb-07.jpg")
+
+// Blue values
+const blueBuy = data.blue.value_buy.toFixed(2)
+const blueSell = data.blue.value_sell.toFixed(2)
+
+// Oficial values
+const oficialBuy = data.oficial.value_buy.toFixed(2)
+const oficialSell = data.oficial.value_sell.toFixed(2)
+
+// Date formatting
+const timeFormatter = new DateFormatter()
+timeFormatter.dateFormat = 'dd/MM/yyyy HH:mm'
+
+// Load background image
+const bgReq = new Request("https://i.ibb.co/P6SZwZt/14731307-rm218-bb-07.jpg")
 let bgImage = await bgReq.loadImage()
 
-let widget = createWidget(valueBuy, valueSell, bgImage)
+// Decide which to show: even minute = blue, odd = oficial
+const currentMinute = new Date().getMinutes()
+const showBlue = currentMinute % 2 === 0
+
+// Set values accordingly
+const type = showBlue ? "Dólar Blue" : "Dólar Oficial"
+const titleColor = showBlue ? Color.blue() : Color.green()
+const buy = showBlue ? blueBuy : oficialBuy
+const sell = showBlue ? blueSell : oficialSell
+
+// Build and show widget
+let widget = createWidget(type, buy, sell, bgImage, titleColor)
+
 if (config.runsInWidget) {
-  // create and show widget
   Script.setWidget(widget)
   Script.complete()
 } else {
   widget.presentSmall()
 }
 
-// Assemble widget layout
-function createWidget(valueBuy, valueSell, bgImage) {
+// Widget layout
+function createWidget(title, valueBuy, valueSell, bgImage, titleColor) {
   let widget = new ListWidget()
   widget.backgroundColor = new Color("#1a1a1a")
   widget.backgroundImage = bgImage
-  //widget.url = 'https://bluelytics.com.ar/#!/'; Sets a URL to be redirected when tapping over the widget
 
-  let staticText = widget.addText("Dolar Blue")
-  staticText.textColor = Color.blue()
+  let staticText = widget.addText(title)
+  staticText.textColor = titleColor
   staticText.font = Font.boldSystemFont(16)
   staticText.centerAlignText()
 
@@ -59,11 +80,10 @@ function createWidget(valueBuy, valueSell, bgImage) {
 
   widget.addSpacer(8)
 
-  // Show last update
-  let lastDate = widget.addText(timeFormatter.string(new Date()));
+  let lastDate = widget.addText(timeFormatter.string(new Date()))
   lastDate.textColor = Color.gray()
   lastDate.font = Font.mediumSystemFont(10)
-  lastDate.centerAlignText();
+  lastDate.centerAlignText()
 
   widget.setPadding(0, 0, 0, 0)
   return widget
